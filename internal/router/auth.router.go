@@ -6,12 +6,14 @@ import (
 )
 
 func initAuthRouter(r *gin.Engine) {
+	// Mengelompokkan rute
 	usersGroup := r.Group("/auth")
 
+	// Inject Dependency
 	authService := service.NewAuthService()
 	authHandler := handler.NewAuthHandler(authService)
 
+	// Mendaftarkan rute
 	usersGroup.POST("/register", authHandler.Register)
-	usersGroup.POST("/register", authHandler.Login)
-
+	usersGroup.POST("/login", authHandler.Login)
 }

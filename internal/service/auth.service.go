@@ -2,53 +2,52 @@ package service
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/rlanakomara7/koda-b9-gin.git/internal/dto"
 )
 
 type AuthService struct {
-	users map[string]dto.Account
+	users []dto.User
 }
 
 func NewAuthService() *AuthService {
 	return &AuthService{
-		users: make(map[string]dto.Account),
+		users: []dto.User{},
 	}
 }
 
-func (s *AuthService) ValidateAccount(account dto.Account) error {
-	if len(account.Email) == 0 {
-		return errors.New("email not be empty")
+// Validasi dan Logika Register
+func (s *AuthService) Register(user dto.User) error {
+	if len(user.Username) <= 6 || len(user.Email) <= 6 || len(user.Password) <= 6 {
+		return errors.New("username, email, dan password harus lebih dari 6 karakter")
 	}
-	if len(account.Password) < 8 {
-		return errors.New("password tidak boleh kurang dari 8 karakter")
+
+	// Mengecek apakah email sudah pernah didaftarkan
+	for _, u := range s.users {
+		if u.Email == user.Email {
+			return errors.New("email sudah terdaftar")
+		}
 	}
+
+	// Simpan user baru
+	s.users = append(s.users, user)
 	return nil
 }
 
-func (s *AuthService) RegisterUser(account dto.Account) error {
-	if err := s.ValidateAccount(account); err != nil {
-		return err
+// Validasi dan Logika Login
+func (s *AuthService) Login(req dto.User) (dto.User, error) {
+	if len(req.Email) <= 6 || len(req.Password) <= 6 {
+		return dto.User{}, errors.New("email atau password tidak valid")
 	}
 
-	if _, exists := s.users[account.Email]; exists {
-		return errors.New("Email sudah terdaftar")
+	for _, u := range s.users {
+		if u.Email == req.Email {
+			if u.Password == req.Password {
+				return u, nil // Berhasil login
+			}
+			return dto.User{}, errors.New("password salah")
+		}
 	}
 
-	s.users[account.Email] = account
-	return nil
-}
-
-func (s *AuthService) LoginUser(account dto.User) (dto.User, error) {
-	storedUser, exists := s.users[account.Email]
-	if !exists || storedUser.Password != account.Password {
-		return dto.User{}, errors.New("Email atau password salah")
-	}
-
-	return storedUser, nil
-}
-
-func (s *AuthService) FormatLoginMessage(email string) string {
-	return fmt.Sprintf("Anda berhasil login dengan email %s", email)
+	return dto.User{}, errors.New("email tidak ditemukan")
 }
